@@ -33,11 +33,11 @@ ORIGINS = {
                                "johanneshov", "akersberga", "upplands vasby"]},
     "Arlanda":   {"lat": 59.6498, "lon": 17.9238, "radius_km": 15,
                   "keywords": ["arlanda", "marsta"]},
-    "Uppsala":   {"lat": 61.0099, "lon": 14.5636, "radius_km": 15,
-                  "keywords": ["mora"]},          # TEST – revert to Uppsala
+    "Uppsala":   {"lat": 59.8586, "lon": 17.6389, "radius_km": 15,
+                  "keywords": ["uppsala"]},
 }
-DESTINATION = {"name": "Östersund", "lat": 59.3326, "lon": 18.0649, "radius_km": 50,
-               "keywords": ["stockholm"]}         # TEST – revert to Östersund
+DESTINATION = {"name": "Östersund", "lat": 63.1792, "lon": 14.6357, "radius_km": 20,
+               "keywords": ["ostersund", "froson", "are ostersund"]}
 
 HERTZ_URL = "https://www.hertzfreerider.se/api/transport-routes/?country=SWEDEN"
 HERTZ_SITE = "https://www.hertzfreerider.se/"
