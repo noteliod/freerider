@@ -3,7 +3,7 @@ name: Freerider watch
 
 on:
   schedule:
-    - cron: "*/10 * * * *"   # every 10 minutes (GitHub may delay a few minutes)
+    - cron: "3,13,23,33,43,53 * * * *"
   workflow_dispatch:          # lets you run it manually from the Actions tab
 
 permissions:
