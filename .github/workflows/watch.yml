@@ -1,22 +1,28 @@
 name: Freerider watch
 
+# How it runs:
+# One job loops for ~5.5 h, checking every 10 min, then starts a fresh copy of
+# itself (GitHub caps a job at 6 h). The hourly schedule is only a backup that
+# restarts the chain if it ever breaks; the concurrency group ensures only one
+# loop runs at a time.
 
 on:
+  workflow_dispatch:
   schedule:
-    - cron: "3,13,23,33,43,53 * * * *"
-  workflow_dispatch:          # lets you run it manually from the Actions tab
+    - cron: "17 * * * *"
 
 permissions:
-  contents: write             # needed to commit seen.json
+  contents: write   # commit seen.json
+  actions: write    # re-start itself
 
 concurrency:
   group: freerider-watch
   cancel-in-progress: false
 
 jobs:
-  check:
+  watch:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 355
     steps:
       - uses: actions/checkout@v4
 
@@ -27,19 +33,31 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: Check sites
+      - name: Check every 10 minutes
         env:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           MAIL_TO:   ${{ secrets.MAIL_TO }}
-        run: python watcher.py
-
-      - name: Save seen trips
+          INTERVAL: "600"      # seconds between checks
+          RUN_FOR:  "19800"    # 5.5 h, then hand over to a fresh run
         run: |
-          if [ -n "$(git status --porcelain seen.json)" ]; then
-            git config user.name  "freerider-bot"
-            git config user.email "freerider-bot@users.noreply.github.com"
-            git add seen.json
-            git commit -m "seen: update"
-            git push
-          fi
+          git config user.name  "freerider-bot"
+          git config user.email "freerider-bot@users.noreply.github.com"
+          end=$(( $(date +%s) + RUN_FOR ))
+          while [ "$(date +%s)" -lt "$end" ]; do
+            echo "::group::Check $(TZ=Europe/Stockholm date '+%Y-%m-%d %H:%M')"
+            python watcher.py || echo "watcher failed, retrying next round"
+            if [ -n "$(git status --porcelain seen.json)" ]; then
+              git add seen.json
+              git commit -q -m "seen: update"
+              git pull -q --rebase origin main && git push -q || echo "push failed, will retry"
+            fi
+            echo "::endgroup::"
+            sleep "$INTERVAL"
+          done
+
+      - name: Start next run
+        if: success() || failure()   # not on manual cancel, so you can stop it
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run watch.yml --ref main -R "${{ github.repository }}"
